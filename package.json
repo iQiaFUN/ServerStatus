@@ -1,0 +1,16 @@
+{
+  "name": "serverstatus",
+  "version": "1.0.6",
+  "description": "Query server status",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "iQiaFUN",
+  "license": "ISC",
+  "dependencies": {
+    "cpu-stat": "^2.0.1",
+    "os": "^0.1.2",
+    "os-utils": "^0.0.14"
+  }
+}
