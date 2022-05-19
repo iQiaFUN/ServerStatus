@@ -1,26 +1,6 @@
-const os = require('os');
-const osutils = require('os-utils');
-var cpuStat = require('cpu-stat');
-const { delStamp } = require('oicq/lib/internal');
-const cmd = '服务器状态';
-let chat = true;
-var RamFree,RamUsed,RamPercent,cpuPercent;
-const Ram = os.totalmem();
-const RamTotal = dealMem(Ram);
-
-var interval = setInterval(() => {
-    cpuStat.usagePercent(function(err, percent, seconds) {
-        if (err) {
-             return;
-       }
-       RamFree = dealMem(os.freemem());
-       cpuPercent = parseFloat(percent).toFixed(2);
-       RamUsed = dealMem(os.totalmem()-os.freemem());
-       RamPercent = (100*(osutils.totalmem()-osutils.freemem())/osutils.totalmem()).toFixed(2);
-   });
-}, 3000);
-
-
+const path = require('path');
+const cfg = JSON.parse(NIL.IO.readFrom(path.join(__dirname, 'config.json')));
+const vcfg = NIL._vanilla.cfg;
 
 function getText(e) {
     var rt = '';
@@ -34,38 +14,56 @@ function getText(e) {
     return rt;
 }
 
-function dealMem(mem){
-    var G = 0,
-        M = 0,
-        KB = 0;
-    (mem>(1<<30))&&(G=(mem/(1<<30)).toFixed(2));
-    (mem>(1<<20))&&(mem<(1<<30))&&(M=(mem/(1<<20)).toFixed(2));
-    (mem>(1<<10))&&(mem>(1<<20))&&(KB=(mem/(1<<10)).toFixed(2));
-    return G>0?G+'G':M>0?M+'M':KB>0?KB+'KB':mem+'B';
-};
-
-function onStart(api){
-    let main = function(aaa){
-		api.listen(aaa,(e)=>{
-			let t = getText(e);
-			if(t==cmd){
-				let arr = [
-				`----服务器状态----\n`,
-				`#CPU占用：${cpuPercent}%\n`,
-				`#内存：${RamUsed}/${RamTotal}(${RamPercent}%)`];
-				e.reply(arr);
-			}
-		});
-	}
-	main('onMainMessageReceived');
-	if(chat){
-		main('onChatMessageReceived');
-	}
+function GUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0,
+            v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
+function Occupancy(ser) {
+    let pack = getOccupancyPack();
+    NIL.SERVERS.get(ser).sendCustomPack(pack);
+}
 
+function getOccupancyPack(){
+    let guid = GUID();
+    return JSON.stringify({
+        action: 'occupancy',
+        type: 'pack',
+        params: {
+            id:guid
+        }
+    });
+}
 
-module.exports = {
-    onStart,
+class ServerStatus extends NIL.ModuleBase{
+    onStart(api){
+        api.listen('onMainMessageReceived',e=>{
+            let text = getText(e);
+            let pt = text.split(' ');
+            if(pt[0]==cfg.cmd){
+                Occupancy(pt[1])
+            }
+            e.reply('已发送到服务器',true)
+        })
+        api.listen('onWebsocketReceived',dt=>{
+            let data = JSON.parse(dt.message);
+            if(data.cause == 'occupancy'){
+                let status = data.parmas;
+                let CPU = status.CPU;
+                let Memory = status.Memory;
+                let arr = [
+                    `----服务器状态----\n`,
+                    `#CPU占用：${CPU*100}%\n`,
+                    `#内存：${Memory.used}/${Memory.total} (${Memory.percent}%)`
+                ];
+                NIL.bots.getBot(vcfg.self_id).sendGroupMsg(vcfg.group.main, arr);
+            }
+        })
+    }
     onStop(){}
 }
+
+module.exports = new ServerStatus;
