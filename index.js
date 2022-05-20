@@ -44,14 +44,14 @@ class ServerStatus extends NIL.ModuleBase{
             let text = getText(e);
             let pt = text.split(' ');
             if(pt[0]==cfg.cmd){
-                Occupancy(pt[1])
+                Occupancy(pt[1]);
+                e.reply('已发送到服务器',true);
             }
-            e.reply('已发送到服务器',true)
         })
         api.listen('onWebsocketReceived',dt=>{
             let data = JSON.parse(dt.message);
             if(data.cause == 'occupancy'){
-                let status = data.parmas;
+                let status = data.params;
                 let CPU = status.CPU;
                 let Memory = status.Memory;
                 let arr = [
