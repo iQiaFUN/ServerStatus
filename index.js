@@ -1,4 +1,13 @@
 const path = require('path');
+const tmpcfg = JSON.parse(NIL.IO.readFrom(path.join(__dirname, 'example.json')));
+
+function checkFile(file, text) {
+    if (NIL.IO.exists(path.join(__dirname, file)) == false) {
+        NIL.IO.WriteTo(path.join(__dirname, file), text);
+    }
+}
+
+checkFile("config.json", tmpcfg);
 const cfg = JSON.parse(NIL.IO.readFrom(path.join(__dirname, 'config.json')));
 const vcfg = NIL._vanilla.cfg;
 
